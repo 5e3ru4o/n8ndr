@@ -3,18 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 5
-            }
-          ]
-        }
+        "httpMethod": "POST",
+        "path": "telegram",
+        "responseMode": "lastNode",
+        "responseData": "firstEntry"
       },
       "id": "6dde7bfb-9c54-423c-a86a-8c5f082e16bd",
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
+      "name": "Webhook Telegram",
+      "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
         240,
@@ -22,95 +18,31 @@
       ]
     },
     {
-      "parameters": {
-        "message": "=Current time: {{new Date().toLocaleString()}} / Текущее время: {{new Date().toLocaleString()}}",
-        "recipient": "@rkray"
-      },
-      "id": "31a5b0df-9e4d-4f4f-9cb2-0338e189afa1",
-      "name": "Set Message",
+      "parameters": {},
+      "id": "inspect",
+      "name": "Inspect",
       "type": "n8n-nodes-base.set",
       "typeVersion": 1,
       "position": [
-        500,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "promptType": "modify",
-        "text": "Преобразуй сообщение: {{$node['Set Message'].json.message}}",
-        "options": {}
-      },
-      "id": "AI Agent",
-      "name": "AI Agent",
-      "type": "n8n-nodes-base.aiAgent",
-      "typeVersion": 1,
-      "position": [
-        660,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "url": "http://admin:changeThisPassword@host.docker.internal:8000/send/text",
-        "requestMethod": "POST",
-        "responseFormat": "json",
-        "jsonParameters": true,
-        "options": {},
-        "bodyParametersJson": "={\n  \"recipient\": \"{{$node[\"Set Message\"].json[\"recipient\"]}}\",\n  \"text\": \"{{$node[\"AI Agent\"].json[\"text\"]}}\"\n}",
-        "headerParametersJson": "{\"Content-Type\":\"application/json\"}"
-      },
-      "id": "a90a8b3e-a877-4073-a1ca-65c5ff4cb6e7",
-      "name": "Send Message",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
-      "position": [
-        820,
+        480,
         300
       ]
     }
   ],
   "connections": {
-    "Schedule Trigger": {
+    "Webhook Telegram": {
       "main": [
         [
           {
-            "node": "Set Message",
+            "node": "Inspect",
             "type": "main",
             "index": 0
           }
         ]
-      ]
-    },
-    "Set Message": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Agent": {
-      "main": [
-        [
-          {
-            "node": "Send Message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Message": {
-      "main": [
-        []
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {},
   "versionId": "f65b34f5-d3bb-4ed7-bb3a-c9ee2af0c0b9",
   "id": "1",

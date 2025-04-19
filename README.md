@@ -146,8 +146,8 @@ docker-compose up -d --build
 Для интеграции с n8n см. [инструкцию по интеграции](docs/n8n-integration.md).
 
 Пример workflow доступен в [examples/n8n-workflow.json](examples/n8n-workflow.json).
+  - **SQLite Insert**: узел сохраняет поля `sender` и `text` входящих сообщений в локальную базу `messages.db`.
 
-## Пример полного workflow
 В `examples/n8n-workflow-full.json` добавлены следующие исправления:
 - Узел `Manual Trigger` для ручного запуска.
 - В `Send Code` включён `jsonParameters` и добавлены `headerParametersJson` и `queryParametersJson` для корректной передачи JSON.

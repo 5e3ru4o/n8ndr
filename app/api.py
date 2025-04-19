@@ -3,13 +3,14 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
 import os
 import re
-from telethon import TelegramClient, functions, types
+from telethon import TelegramClient, functions, types, events
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import InputPeerUser, InputPeerChannel
 from loguru import logger
 from pydantic import BaseModel
 from typing import Optional, List, Union
 import asyncio
+import httpx
 
 from .config import settings
 from .auth import create_client, check_authorized, login_with_phone, login_with_code, login_with_password, get_me
@@ -227,13 +228,39 @@ async def get_contacts(username: str = Depends(get_current_username)):
         logger.error(f"Ошибка при получении контактов: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при получении контактов: {str(e)}")
 
+import httpx
+import os
+# Basic auth для n8n
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+# Используем DNS-имя сервиса n8n внутри Docker-сети
+N8N_WEBHOOK_URL = os.getenv(
+    "N8N_WEBHOOK_URL",
+    "http://n8n:5678/webhook/telegram"
+)
+
 @app.on_event("startup")
-async def startup_event():
-    """Инициализация при запуске"""
-    client = await create_client()
-    clients["client"] = client
-    await client.connect()
-    logger.info("API сервер запущен")
+async def start_listening():
+    logger.info("Запуск Telethon listener-а")
+    async def _listen():
+        client = await get_client()
+        logger.info("Telegram client подключен и слушает новые сообщения")
+        # Подписка на новые сообщения Telegram
+        @client.on(events.NewMessage())
+        async def new_message_handler(event):
+            logger.info(f"Получено сообщение от {event.sender_id}: {event.message.message}")
+            payload = {"sender": event.sender_id, "text": event.message.message}
+            logger.info(f"Отправка payload в n8n: {payload}")
+            try:
+                # Используем асинхронный клиент для отправки
+                async with httpx.AsyncClient(auth=(ADMIN_USERNAME, ADMIN_PASSWORD)) as async_client:
+                    response = await async_client.post(N8N_WEBHOOK_URL, json=payload)
+                    logger.info(f"Webhook POST успешен, status={response.status_code}")
+            except Exception as e:
+                logger.error(f"Webhook POST failed: {e}")
+        # Запуск event loop Telethon до отключения
+        await client.run_until_disconnected()
+    asyncio.create_task(_listen())
 
 @app.on_event("shutdown")
 async def shutdown_event():
