@@ -1,0 +1,39 @@
+{
+  "name": "Telegram Auth Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "phone", "value": "+995544443504" },
+            { "name": "code",  "value": "" }
+          ]
+        }
+      },
+      "name": "Set Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [200, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/login/send_code",
+        "responseFormat": "json",
+        "jsonParameters": false,
+        "options": {},
+        "bodyParametersJson": "{\"phone\":\"{{$node['Set Data'].json.phone}}\"}"
+      },
+      "name": "Send Code",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [400, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/login/verify_code",
+        "responseFormat": "json",
+        "jsonParameters": false,
+        "options": {},
+        "bodyParametersJson": "{\"phone\":\"{{$node['Set Data'].json.phone}}\",

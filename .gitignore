@@ -2,7 +2,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.env
 .venv
 env/
 venv/
@@ -11,6 +10,5 @@ env.bak/
 venv.bak/
 *.session
 *.session-journal
-.env
 .DS_Store
 sessions/

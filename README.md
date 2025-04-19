@@ -49,6 +49,7 @@ nano .env  # Отредактируйте настройки при необхо
 3. Запускаем Docker контейнер
 ```bash
 docker-compose up -d
+# После запуска в фоне сервис n8n будет доступен по адресу http://localhost:5678 (Basic Auth: admin/ваш_пароль)
 ```
 
 4. Настраиваем Nginx
@@ -145,6 +146,15 @@ docker-compose up -d --build
 Для интеграции с n8n см. [инструкцию по интеграции](docs/n8n-integration.md).
 
 Пример workflow доступен в [examples/n8n-workflow.json](examples/n8n-workflow.json).
+
+## Пример полного workflow
+В `examples/n8n-workflow-full.json` добавлены следующие исправления:
+- Узел `Manual Trigger` для ручного запуска.
+- В `Send Code` включён `jsonParameters` и добавлены `headerParametersJson` и `queryParametersJson` для корректной передачи JSON.
+Импортируйте и используйте этот файл для последовательной авторизации и отправки сообщений.
+
+### Упрощенный workflow отправки сообщений
+В `examples/n8n-sending-workflow.json` — workflow с триггером расписания и без этапов авторизации.
 
 ## Документация
 

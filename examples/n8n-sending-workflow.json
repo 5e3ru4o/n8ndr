@@ -1,0 +1,58 @@
+{
+  "name": "Telegram Personal API",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "minutes", "minutesInterval": 5 }
+          ]
+        }
+      },
+      "id": "6dde7bfb-9c54-423c-a86a-8c5f082e16bd",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "message": "=Current time: {{new Date().toLocaleString()}} / Текущее время: {{new Date().toLocaleString()}}",
+        "recipient": "@rkray"
+      },
+      "id": "31a5b0df-9e4d-4f4f-9cb2-0338e189afa1",
+      "name": "Set Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "code": "const { recipient, message } = items[0].json;\nconst response = await this.helpers.request({\n  method: 'POST',\n  uri: 'http://host.docker.internal:8000/send/text',\n  auth: { user: 'admin', pass: 'changeThisPassword' },\n  json: true,\n  body: { recipient, text: message },\n});\nreturn this.helpers.returnJsonArray(response);"
+      },
+      "id": "a90a8b3e-a877-4073-a1ca-65c5ff4cb6e7",
+      "name": "Send Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [ { "node": "Set Message", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Set Message": {
+      "main": [
+        [ { "node": "Send Message", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "f65b34f5-d3bb-4ed7-bb3a-c9ee2af0c0b9",
+  "id": "1",
+  "meta": { "instanceId": "example" },
+  "tags": [ { "name": "Telegram", "color": "#158a15" } ]
+}

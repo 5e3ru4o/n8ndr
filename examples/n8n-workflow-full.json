@@ -1,0 +1,118 @@
+{
+  "name": "Telegram Auth and Send Workflow",
+  "nodes": [
+    {
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [100, 200],
+      "parameters": {}
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "phone", "value": "+995544443504" },
+            { "name": "code", "value": "" },
+            { "name": "password2fa", "value": "?07Dyt0w1-" },
+            { "name": "recipient", "value": "@rkray" },
+            { "name": "message", "value": "hi" }
+          ]
+        }
+      },
+      "name": "Set Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [200, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/login/send_code",
+        "responseFormat": "json",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\"phone\": \"{{$node['Set Data'].json.phone}}\"}",
+        "headerParametersJson": "{\"Content-Type\":\"application/json\"}",
+        "queryParametersJson": "{}"
+      },
+      "name": "Send Code",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [400, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/login/get_code",
+        "responseFormat": "json",
+        "jsonParameters": false,
+        "options": {},
+        "queryParametersJson": "{}"
+      },
+      "name": "Get Code",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [500, 200],
+      "parameters": {},
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/login/verify_code",
+        "responseFormat": "json",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\"phone\": \"{{$node['Set Data'].json.phone}}\", \"code\": \"{{$node['Set Data'].json.code}}\", \"phone_code_hash\": \"{{$node['Send Code'].json.phone_code_hash}}\"}",
+        "headerParametersJson": "{\"Content-Type\":\"application/json\"}",
+        "queryParametersJson": "{}"
+      },
+      "name": "Verify Code",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [600, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/login/2fa",
+        "responseFormat": "json",
+        "jsonParameters": false,
+        "options": {},
+        "bodyParametersJson": "{\"password\": \"{{$node['Set Data'].json.password2fa}}\"}"
+      },
+      "name": "2FA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/send/text",
+        "responseFormat": "json",
+        "jsonParameters": false,
+        "options": {},
+        "bodyParametersJson": "{\"recipient\": \"{{$node['Set Data'].json.recipient}}\", \"text\": \"{{$node['Set Data'].json.message}}\"}"
+      },
+      "name": "Send Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1000, 200]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          { "node": "Set Data", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Set Data": { "main": [[ { "node": "Send Code", "type": "main", "index": 0 } ]] },
+    "Send Code": { "main": [[ { "node": "Get Code", "type": "main", "index": 0 } ]] },
+    "Get Code":  { "main": [[ { "node": "Verify Code", "type": "main", "index": 0 } ]] },
+    "Verify Code": { "main": [[ { "node": "2FA", "type": "main", "index": 0 } ]] },
+    "2FA": { "main": [[ { "node": "Send Message", "type": "main", "index": 0 } ]] }
+  }
+}

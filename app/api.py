@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Fi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
 import os
+import re
 from telethon import TelegramClient, functions, types
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import InputPeerUser, InputPeerChannel
@@ -78,6 +79,23 @@ async def send_code(phone_data: PhoneNumber, username: str = Depends(get_current
     result = await login_with_phone(client, phone_data.phone)
     return result
 
+@app.get("/login/get_code", tags=["Auth"])
+async def get_code(username: str = Depends(get_current_username)):
+    """Retrieve the latest Telegram login code."""
+    client = await get_client()
+    try:
+        # Получаем entity официального бота Telegram по ID
+        entity = await client.get_entity(777000)
+        messages = await client.get_messages(entity, limit=10)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch messages: {str(e)}")
+    for msg in messages:
+        if msg.message:
+            match = re.search(r"(\d{5,7})", msg.message)
+            if match:
+                return {"status": "code_received", "code": match.group(1)}
+    raise HTTPException(status_code=404, detail="Code not found")
+
 @app.post("/login/verify_code", tags=["Auth"])
 async def verify_code(verification_data: VerificationCode, username: str = Depends(get_current_username)):
     """Подтвердить код из SMS"""
@@ -107,25 +125,11 @@ async def send_text_message(message: Message, username: str = Depends(get_curren
         raise HTTPException(status_code=401, detail="Не авторизован в Telegram")
     
     try:
-        # Определение типа получателя (username, phone или chat_id)
-        recipient = message.recipient
-        entity = None
-        
-        # Если это числовой ID
-        if recipient.isdigit():
-            entity = int(recipient)
-        # Если это username
-        elif recipient.startswith("@"):
-            entity = recipient
-        # Если это номер телефона
-        elif recipient.startswith("+"):
-            entity = await client.get_entity(recipient)
-        else:
-            # Попробовать получить по имени без @
-            try:
-                entity = await client.get_entity(recipient)
-            except Exception:
-                raise HTTPException(status_code=404, detail=f"Получатель '{recipient}' не найден")
+        # Определение entity через get_entity()
+        try:
+            entity = await client.get_entity(message.recipient)
+        except Exception:
+            raise HTTPException(status_code=404, detail=f"Получатель '{message.recipient}' не найден")
         
         # Отправка сообщения
         sent_message = await client.send_message(

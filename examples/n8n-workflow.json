@@ -23,8 +23,8 @@
     },
     {
       "parameters": {
-        "message": "=Текущее время: {{new Date().toLocaleString()}}",
-        "recipient": "@username"
+        "message": "=Current time: {{new Date().toLocaleString()}} / Текущее время: {{new Date().toLocaleString()}}",
+        "recipient": "@rkray"
       },
       "id": "31a5b0df-9e4d-4f4f-9cb2-0338e189afa1",
       "name": "Set Message",
@@ -37,21 +37,35 @@
     },
     {
       "parameters": {
-        "url": "https://tg-api.itpovar.ru/send/text",
-        "authentication": "basicAuth",
-        "username": "admin",
-        "password": "changeThisPassword",
-        "method": "POST",
+        "promptType": "modify",
+        "text": "Преобразуй сообщение: {{$node['Set Message'].json.message}}",
+        "options": {}
+      },
+      "id": "AI Agent",
+      "name": "AI Agent",
+      "type": "n8n-nodes-base.aiAgent",
+      "typeVersion": 1,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://admin:changeThisPassword@host.docker.internal:8000/send/text",
+        "requestMethod": "POST",
+        "responseFormat": "json",
         "jsonParameters": true,
         "options": {},
-        "bodyParametersJson": "={\n  \"recipient\": \"{{$node[\"Set Message\"].json[\"recipient\"]}}\",\n  \"text\": \"{{$node[\"Set Message\"].json[\"message\"]}}\"\n}"
+        "bodyParametersJson": "={\n  \"recipient\": \"{{$node[\"Set Message\"].json[\"recipient\"]}}\",\n  \"text\": \"{{$node[\"AI Agent\"].json[\"text\"]}}\"\n}",
+        "headerParametersJson": "{\"Content-Type\":\"application/json\"}"
       },
       "id": "a90a8b3e-a877-4073-a1ca-65c5ff4cb6e7",
       "name": "Send Message",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 3,
+      "typeVersion": 2,
       "position": [
-        740,
+        820,
         300
       ]
     }
@@ -72,11 +86,27 @@
       "main": [
         [
           {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
             "node": "Send Message",
             "type": "main",
             "index": 0
           }
         ]
+      ]
+    },
+    "Send Message": {
+      "main": [
+        []
       ]
     }
   },

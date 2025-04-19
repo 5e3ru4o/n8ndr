@@ -27,6 +27,7 @@ async def login_with_phone(client, phone_number):
     if await client.is_user_authorized():
         return {"status": "already_authorized"}
     
+    # Отправка кода в чат Telegram (по умолчанию)
     try:
         sent_code = await client.send_code_request(phone_number)
         return {
