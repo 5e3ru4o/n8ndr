@@ -125,28 +125,31 @@ async def send_text_message(message: Message, username: str = Depends(get_curren
     if not await check_authorized(client):
         raise HTTPException(status_code=401, detail="Не авторизован в Telegram")
     
-    try:
-        # Определение entity через get_entity()
+    recipient = message.recipient
+    if recipient.lstrip('-').isdigit():
+        # Отправка по chat_id
         try:
-            entity = await client.get_entity(message.recipient)
+            sent = await client.send_message(int(recipient), message.text, parse_mode=message.parse_mode)
+            return {"status": "success", "message_id": sent.id, "date": sent.date.isoformat()}
         except Exception:
-            raise HTTPException(status_code=404, detail=f"Получатель '{message.recipient}' не найден")
-        
-        # Отправка сообщения
-        sent_message = await client.send_message(
-            entity=entity,
-            message=message.text,
-            parse_mode=message.parse_mode
-        )
-        
-        return {
-            "status": "success",
-            "message_id": sent_message.id,
-            "date": sent_message.date.isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Ошибка при отправке сообщения: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка при отправке сообщения: {str(e)}")
+            logger.exception("Ошибка при отправке сообщения по chat_id")
+            raise HTTPException(status_code=500, detail="Ошибка при отправке сообщения по chat_id")
+    # Иначе username или телефон
+    try:
+        entity = await client.get_entity(recipient)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Ошибка при определении получателя")
+        raise HTTPException(status_code=404, detail=f"Получатель '{recipient}' не найден")
+    try:
+        sent = await client.send_message(entity, message.text, parse_mode=message.parse_mode)
+        return {"status": "success", "message_id": sent.id, "date": sent.date.isoformat()}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Ошибка при отправке сообщения")
+        raise HTTPException(status_code=500, detail="Ошибка при отправке сообщения")
 
 @app.post("/send/file", tags=["Messages"])
 async def send_file(
@@ -170,7 +173,7 @@ async def send_file(
         
         # Определение получателя
         entity = None
-        if recipient.isdigit():
+        if recipient.lstrip('-').isdigit():
             entity = int(recipient)
         elif recipient.startswith("@"):
             entity = recipient
@@ -238,6 +241,10 @@ N8N_WEBHOOK_URL = os.getenv(
     "N8N_WEBHOOK_URL",
     "http://n8n:5678/webhook/telegram"
 )
+SECOND_N8N_WEBHOOK_URL = os.getenv(
+    "SECOND_N8N_WEBHOOK_URL",
+    "http://n8n:5678/webhook/05165f1d-c814-4083-8ba8-877fd8ffb47e"
+)
 
 @app.on_event("startup")
 async def start_listening():
@@ -249,13 +256,22 @@ async def start_listening():
         @client.on(events.NewMessage())
         async def new_message_handler(event):
             logger.info(f"Получено сообщение от {event.sender_id}: {event.message.message}")
-            payload = {"sender": event.sender_id, "text": event.message.message}
+            # Добавляем chat_id для воспроизведения контекста
+            chat_id = event.chat_id if event.chat_id is not None else event.sender_id
+            payload = {"sender": event.sender_id, "chat_id": chat_id, "text": event.message.message, "message_id": event.message.id}
             logger.info(f"Отправка payload в n8n: {payload}")
             try:
-                # Используем асинхронный клиент для отправки
+                # Используем асинхронный клиент для отправки в оба workflow
                 async with httpx.AsyncClient(auth=(ADMIN_USERNAME, ADMIN_PASSWORD)) as async_client:
-                    response = await async_client.post(N8N_WEBHOOK_URL, json=payload)
-                    logger.info(f"Webhook POST успешен, status={response.status_code}")
+                    # Первый webhook
+                    response1 = await async_client.post(N8N_WEBHOOK_URL, json=payload)
+                    logger.info(f"Webhook POST 1 успешен, status={response1.status_code}")
+                    # Второй webhook
+                    try:
+                        response2 = await async_client.post(SECOND_N8N_WEBHOOK_URL, json=payload)
+                        logger.info(f"Webhook POST 2 успешен, status={response2.status_code}")
+                    except Exception as e:
+                        logger.error(f"Webhook POST 2 failed: {e}")
             except Exception as e:
                 logger.error(f"Webhook POST failed: {e}")
         # Запуск event loop Telethon до отключения
