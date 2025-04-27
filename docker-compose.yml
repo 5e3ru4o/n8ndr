@@ -11,6 +11,8 @@ services:
       - telegram-sessions:/app/sessions
     env_file:
       - .env
+    environment:
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/telegram
 
   n8n:
     image: n8nio/n8n:latest
