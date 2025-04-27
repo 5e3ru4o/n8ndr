@@ -4,7 +4,7 @@ import secrets
 import os
 import re
 from telethon import TelegramClient, functions, types, events
-from telethon.errors import SessionPasswordNeededError
+from telethon.errors import SessionPasswordNeededError, AuthKeyUnregisteredError
 from telethon.tl.types import InputPeerUser, InputPeerChannel
 from loguru import logger
 from pydantic import BaseModel
@@ -275,7 +275,10 @@ async def start_listening():
             except Exception as e:
                 logger.error(f"Webhook POST failed: {e}")
         # Запуск event loop Telethon до отключения
-        await client.run_until_disconnected()
+        try:
+            await client.run_until_disconnected()
+        except AuthKeyUnregisteredError:
+            logger.warning("AuthKeyUnregisteredError: отсутствие сессии, listener пропущен")
     asyncio.create_task(_listen())
 
 @app.on_event("shutdown")
