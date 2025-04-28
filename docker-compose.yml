@@ -4,28 +4,16 @@ services:
   telegram-api:
     build: .
     restart: always
-    depends_on:
-      - n8n
     ports:
       - "8000:8000"
+      - "5678:5678"
     volumes:
       - ./:/app
       - telegram-sessions:/app/sessions
     env_file:
       - .env
     environment:
-      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/telegram
-
-  n8n:
-    image: n8nio/n8n:latest
-    restart: always
-    ports:
-      - "5678:5678"
-    env_file:
-      - .env
-    volumes:
-      - n8n-data:/home/node/.n8n
+      - N8N_WEBHOOK_URL=http://localhost:5678/webhook/telegram
 
 volumes:
   telegram-sessions:
-  n8n-data:
