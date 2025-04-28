@@ -25,7 +25,7 @@ docker run -d -p 8000:8000 \
   -e SESSION_NAME=<имя_сессии>
 ```
 
-## Ручная установка
+## Ручная установка (FastAPI + Telethon)
 
 Если вы хотите выполнить установку вручную:
 
@@ -41,10 +41,9 @@ cp .env.example .env
 nano .env  # Отредактируйте настройки при необходимости
 ```
 
-3. Запускаем Docker контейнер
+3. Запускаем Docker контейнер API
 ```bash
 docker-compose up -d
-# После запуска в фоне сервис n8n будет доступен по адресу http://localhost:5678 (Basic Auth: admin/ваш_пароль)
 ```
 
 4. Настраиваем Nginx
@@ -138,7 +137,7 @@ docker-compose up -d --build
 
 ## Интеграция с n8n
 
-Запускайте n8n отдельно (на n8n.cloud или в собственном сервисе Railway) и устанавливайте в `.env`:
+Запускайте n8n (+ PostgreSQL) отдельно в вашем проекте Railway — через шаблон **n8n (w/ postgres)** или **отдельные сервисы n8n + Postgres**.
 ```bash
 N8N_WEBHOOK_URL=https://<ваш_n8n_домен>/webhook/telegram
 ```
