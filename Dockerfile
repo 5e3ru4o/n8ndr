@@ -19,7 +19,10 @@ RUN apt-get update && apt-get install -y curl gnupg && \
 
 # Expose ports for API and n8n
 EXPOSE 8000 5678
+# Configure n8n for production (no tunnel, stable Railway domain)
+ENV N8N_HOST=0.0.0.0
 ENV N8N_PORT=5678
+ENV N8N_PROTOCOL=https
 
 # Use Railway’s dynamic PORT environment variable if set, fallback to 8000
-CMD ["sh", "-c", "n8n start --tunnel & uvicorn app.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "n8n start & uvicorn app.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
