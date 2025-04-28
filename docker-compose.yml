@@ -13,21 +13,6 @@ services:
       - telegram-sessions:/app/sessions
     env_file:
       - .env
-    environment:
-      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/telegram
-
-  n8n:
-    build:
-      context: .
-      dockerfile: Dockerfile.n8n
-    restart: always
-    ports:
-      - "5678:5678"
-    volumes:
-      - n8n-data:/home/node/.n8n
-    env_file:
-      - .env
 
 volumes:
   telegram-sessions:
-  n8n-data:
