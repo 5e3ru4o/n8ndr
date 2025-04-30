@@ -1,17 +1,21 @@
 import os
 from telethon import TelegramClient
+from telethon.sessions import StringSession
 from telethon.errors import SessionPasswordNeededError
 from loguru import logger
 from .config import settings
 
 async def create_client():
     """Create and return a Telegram client instance."""
-    # Create sessions directory if it doesn't exist
-    if not os.path.exists(settings.SESSION_PATH):
-        os.makedirs(settings.SESSION_PATH)
-    
-    session_file = os.path.join(settings.SESSION_PATH, settings.SESSION_NAME)
-    client = TelegramClient(session_file, settings.API_ID, settings.API_HASH)
+    session_str = os.getenv("SESSION_STRING")
+    if session_str:
+        client = TelegramClient(StringSession(session_str), settings.API_ID, settings.API_HASH)
+    else:
+        # Create sessions directory if it doesn't exist
+        if not os.path.exists(settings.SESSION_PATH):
+            os.makedirs(settings.SESSION_PATH)
+        session_file = os.path.join(settings.SESSION_PATH, settings.SESSION_NAME)
+        client = TelegramClient(session_file, settings.API_ID, settings.API_HASH)
     return client
 
 async def check_authorized(client):
