@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Union
 import asyncio
 import httpx
+from telethon.sessions import StringSession
 
 from .config import settings
 from .auth import create_client, check_authorized, login_with_phone, login_with_code, login_with_password, get_me
@@ -115,6 +116,15 @@ async def verify_password(password_data: Password, username: str = Depends(get_c
     client = await get_client()
     result = await login_with_password(client, password_data.password)
     return result
+
+@app.get("/session_string", tags=["Auth"])
+async def get_session_string(username: str = Depends(get_current_username)):
+    """Retrieve current Telegram StringSession."""
+    client = await get_client()
+    if not await check_authorized(client):
+        raise HTTPException(status_code=401, detail="Не авторизован в Telegram")
+    session_str = StringSession.save(client.session)
+    return {"session_string": session_str}
 
 # Маршруты для отправки сообщений
 @app.post("/send/text", tags=["Messages"])
