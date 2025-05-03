@@ -120,11 +120,57 @@ async def verify_password(password_data: Password, username: str = Depends(get_c
 @app.get("/session_string", tags=["Auth"])
 async def get_session_string(username: str = Depends(get_current_username)):
     """Retrieve current Telegram StringSession."""
-    client = await get_client()
-    if not await check_authorized(client):
-        raise HTTPException(status_code=401, detail="Не авторизован в Telegram")
+    # Создаём и подключаем нового клиента для получения сессии
+    client = await create_client()
+    await client.connect()
+    # Экспортируем строку сессии и возвращаем
     session_str = StringSession.save(client.session)
     return {"session_string": session_str}
+
+@app.post("/send/action", tags=["Messages"])
+async def send_chat_action(action: dict, username: str = Depends(get_current_username)):
+    """Отправить статус действия (печатает, записывает голосовое и т.д.)"""
+    client = await get_client()
+    
+    if not await check_authorized(client):
+        raise HTTPException(status_code=401, detail="Не авторизован в Telegram")
+    
+    recipient = action.get("recipient")
+    action_type = action.get("action", "typing")
+    
+    if not recipient:
+        raise HTTPException(status_code=400, detail="Необходимо указать получателя (recipient)")
+    
+    # Поддерживаемые типы действий
+    valid_actions = [
+        "typing", "upload_photo", "record_video", "upload_video", 
+        "record_audio", "upload_audio", "upload_document", "find_location",
+        "record_video_note", "upload_video_note", "choose_contact", "playing",
+        "choose_sticker", "cancel"
+    ]
+    
+    if action_type not in valid_actions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Неверный тип действия. Поддерживаемые типы: {', '.join(valid_actions)}"
+        )
+    
+    try:
+        # Определяем получателя (chat_id или username)
+        if recipient.lstrip('-').isdigit():
+            # Отправка по chat_id
+            await client.action(int(recipient), action_type)
+        elif recipient.startswith('@'):
+            # Отправка по username
+            await client.action(recipient, action_type)
+        else:
+            # Попытка отправки по имени диалога
+            await client.action(recipient, action_type)
+            
+        return {"status": "success", "action": action_type, "recipient": recipient}
+    except Exception as e:
+        logger.error(f"Ошибка при отправке действия: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка при отправке действия: {str(e)}")
 
 # Маршруты для отправки сообщений
 @app.post("/send/text", tags=["Messages"])
